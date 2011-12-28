@@ -21,7 +21,7 @@ simple.
 
 This library will NOT support single character switches.  Only GNU
 style --long parameters are supported.
-xc
+
 This library will not support any type of automatic help message
 generation or printing.  The reasoning is that help messages are
 rather easy to print with simple putStrLn's.  Requiring help strings
