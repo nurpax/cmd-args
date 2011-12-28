@@ -1,1 +1,29 @@
 Git/Perforce style command line parser
+======================================
+
+The goal is to parse command line parameters for programs that have
+the following command line syntax:
+
+<app> <global-args,...> <command>  <command specific args> <files...>
+
+An example of an app that uses such a syntax is git.  E.g.,
+
+git --no-pager add --update file.c
+
+The command line libraries I have seen for Haskell and other languages
+tend not to support this nicely.
+
+Other design considerations
+---------------------------
+
+The below considerations are aimed to make the library and its usage
+simple.
+
+This library will NOT support single character switches.  Only GNU
+style --long parameters are supported.
+xc
+This library will not support any type of automatic help message
+generation or printing.  The reasoning is that help messages are
+rather easy to print with simple putStrLn's.  Requiring help strings
+slows down quick prototyping and makes command line argument
+declaration cumbersome.
