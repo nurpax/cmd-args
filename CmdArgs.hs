@@ -32,11 +32,11 @@ longOpt = do
   longOptArgOrNone optName
 
 parseLongArg :: String -> Either ParseError Opt
-parseLongArg s = parse longOpt "" s
+parseLongArg = parse longOpt ""
 
 parseArgs :: [String] -> [Opt]
-parseArgs args =
-  map argToOpt args where
+parseArgs =
+  map argToOpt where
     argToOpt opt =
       case parseLongArg opt of
         Left _ -> OptOther opt
@@ -57,8 +57,8 @@ takeCommand _ =
 -- Check that the rest of the command line contains only file args,
 -- and no options.
 takeFileArgs :: [Opt] -> Either String [String]
-takeFileArgs opts =
-  mapM takeFileArg opts where
+takeFileArgs =
+  mapM takeFileArg where
     takeFileArg (OptOther o) = return o
     takeFileArg (Opt _ _) = Left "options not allowed after file args"
 
