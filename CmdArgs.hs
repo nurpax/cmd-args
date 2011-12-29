@@ -1,7 +1,7 @@
 
 module CmdArgs (
-  OptionMap,
-  parseCommandLine
+    OptionMap
+  , parseCommandLine
   ) where
   
 import qualified Data.Map as M
