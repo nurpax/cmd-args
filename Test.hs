@@ -10,6 +10,4 @@ report (Left err) = putStrLn err >> exitFailure
 
 main :: IO ()
 main = 
-  do
-    args <- fmap parseCommandLine getArgs
-    report args
+  fmap parseCommandLine getArgs >>= report

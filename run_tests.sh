@@ -43,11 +43,18 @@ expect_ok --global-foo add --local-foo foo.c
 expect_ok --global-foo add --local-foo --local-foo2 foo.c
 expect_ok --global-foo add --local-foo-with-arg=xx --local-foo --local-foo2 foo.c foo2.c foo3.c
 
+expect_ok --global-foo-with-arg="aces with spaces" help
+expect_ok help --local-foo-with-arg="'aces with spaces'" help
+
 # command missing cases
 expect_fail
-expect_fail --local-foo
-expect_fail --local-foo-with-arg=karhu
-expect_fail --local-foo-with-arg=karhu --local-foo
+expect_fail --global-foo
+expect_fail --global-foo-with-arg=karhu
+expect_fail --global-foo-with-arg=karhu --local-foo
+
+# empty option arguments
+expect_fail --global-foo-with-arg= help
+expect_fail help --local-foo-with-arg=
 
 # local options after final file args
 expect_fail add foo.c --local-foo

@@ -5,6 +5,7 @@ module CmdArgs (
   ) where
   
 import qualified Data.Map as M
+import Control.Monad (when)
 
 import Text.ParserCombinators.Parsec
 
@@ -15,11 +16,17 @@ data Opt =
 
 type OptionMap = M.Map String String
 
-ident = many (noneOf " =")
+identOrEmpty = many (noneOf " =")
 
+ident = many1 (noneOf " =")
+
+-- Allow empty idents here so that we can easier disallow '--foo='
+-- inputs (i.e., options ending with = but with no argument given.)
+-- Otherwise '--foo=' is interpreted as not an option which causes
+-- hard to understand error messages later.
 longOptArg = do
   char '='
-  ident
+  identOrEmpty
 
 longOptArgOrNone optName =
   do
@@ -67,6 +74,13 @@ takeFileArgs =
     takeFileArg (OptOther o) = return o
     takeFileArg (Opt _ _) = Left "options not allowed after file args"
 
+verifyNonEmptyOptionArgs :: [Opt] -> Either String ()
+verifyNonEmptyOptionArgs =
+  mapM_ testOptionArg where
+    testOptionArg (Opt _ (Just arg)) = 
+      when (arg == "") $ Left "option with an empty argument not allowed" 
+    testOptionArg _ = return ()
+
 -- TODO OptionMap interface TBD
 optsToMap :: [Opt] -> OptionMap
 optsToMap _ = M.empty
@@ -76,7 +90,9 @@ parseCommandLine args =
   let cmdLineTokens = parseArgs args
       (globalOpts, rest) = span isOption cmdLineTokens
   in do
+    verifyNonEmptyOptionArgs globalOpts
     cmd <- takeCommand rest
     let (localOpts, rest') = span isOption (tail rest)
+    verifyNonEmptyOptionArgs localOpts
     fileArgs <- takeFileArgs rest'
     return (optsToMap globalOpts, cmd, optsToMap localOpts, fileArgs)
