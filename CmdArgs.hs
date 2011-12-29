@@ -1,4 +1,9 @@
 
+module CmdArgs (
+  OptionMap,
+  parseCommandLine
+  ) where
+  
 import qualified Data.Map as M
 
 import Text.ParserCombinators.Parsec
