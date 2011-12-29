@@ -6,7 +6,7 @@ the following command line syntax:
 
 <app> <global-args,...> <command>  <command specific args> <files...>
 
-An example of an app that uses such a syntax is git.  E.g.,
+An example of an app that uses such a syntax is git:
 
 git --no-pager add --update file.c
 
