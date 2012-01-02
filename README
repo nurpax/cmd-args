@@ -1,6 +1,15 @@
 Git/Perforce style command line parser
 ======================================
 
+*** NOTE *** This parser has been more of a Haskell practice for me
+    than making something universally useful.  If you need a
+    multi-mode command line parser with nice syntax & ease of use, I'd
+    recommend studying the following:
+
+    http://community.haskell.org/~ndm/cmdargs/
+
+ * * *
+
 The goal is to parse command line parameters for programs that have
 the following command line syntax:
 
