@@ -1,9 +1,8 @@
 
 module CmdArgs (
-    OptionDecls(..)
-  , Command(..)
-  , OptionDecl(..)
-  , OptionMap
+    Cmd(..)
+  , OptDecl(..)
+  , OptMap
   , parseCommandLine
   ) where
 
@@ -13,15 +12,9 @@ import Control.Monad (when)
 
 import Text.ParserCombinators.Parsec
 
--- Declare acceptable commands, global options and command specific options.
-data OptionDecls = OptionDecls {
-    declCommands :: [Command]
-  , declGlobalOpts :: [OptionDecl]
-  }
+data Cmd = Cmd String [OptDecl]
 
-data Command = Command String [OptionDecl]
-
-data OptionDecl =
+data OptDecl =
     NoArg String
   | ReqArg String
 
@@ -29,7 +22,7 @@ data Opt =
     Opt String (Maybe String)
   | OptOther String
 
-type OptionMap = M.Map String String
+type OptMap = M.Map String String
 
 identOrEmpty = many (noneOf "=")
 
@@ -81,9 +74,9 @@ takeCommand (OptOther o:_) =
 takeCommand _ =
   Left "Expecting a command, got --option instead"
 
-lookupCommandDecls :: OptionDecls -> String -> Either String Command
-lookupCommandDecls decls cmd =
-  toEither $ find (\(Command c _) -> cmd == c) (declCommands decls) where
+lookupCommandDecls :: [Cmd] -> String -> Either String Cmd
+lookupCommandDecls cmdDecl cmd =
+  toEither $ find (\(Cmd c _) -> cmd == c) cmdDecl where
     toEither Nothing = Left ("Unknown command '" ++ cmd ++ "'")
     toEither (Just d) = return d
 
@@ -105,7 +98,7 @@ verifyNonEmptyOptionArgs =
 optName (NoArg x) = x
 optName (ReqArg x) = x
 
-verifyOptions :: [OptionDecl] -> [Opt] -> Either String ()
+verifyOptions :: [OptDecl] -> [Opt] -> Either String ()
 verifyOptions optDecls =
   mapM_ verifyOption where
     verifyOption opt =
@@ -123,20 +116,20 @@ verifyOptions optDecls =
     verifyArg _ (Opt _ _) = return ()
 
 -- TODO OptionMap interface TBD
-optsToMap :: [Opt] -> OptionMap
+optsToMap :: [Opt] -> OptMap
 optsToMap _ = M.empty
 
-parseCommandLine :: OptionDecls -> [String] -> Either String (OptionMap, String, OptionMap, [String])
-parseCommandLine decls args =
+parseCommandLine :: [OptDecl] -> [Cmd] -> [String] -> Either String (OptMap, String, OptMap, [String])
+parseCommandLine globalOptDecls cmds args =
   let cmdLineTokens = parseArgs args
       (globalOpts, rest) = span isOption cmdLineTokens
   in do
     verifyNonEmptyOptionArgs globalOpts
     cmd <- takeCommand rest
-    Command _ cmdOpts <- lookupCommandDecls decls cmd
+    Cmd _ cmdOpts <- lookupCommandDecls cmds cmd
     let (localOpts, rest') = span isOption (tail rest)
     verifyNonEmptyOptionArgs localOpts
     fileArgs <- takeFileArgs rest'
-    verifyOptions (declGlobalOpts decls) globalOpts
+    verifyOptions globalOptDecls globalOpts
     verifyOptions cmdOpts localOpts
     return (optsToMap globalOpts, cmd, optsToMap localOpts, fileArgs)
