@@ -36,6 +36,10 @@ longOptArg = do
   char '='
   identOrEmpty
 
+stringToMaybe :: String -> Maybe String
+stringToMaybe s =
+  if s == "" then Nothing else Just s
+
 longOptArgOrNone optName =
   do
     eof
@@ -44,7 +48,7 @@ longOptArgOrNone optName =
   do
     a <- longOptArg
     eof
-    return (Opt optName (Just a))
+    return (Opt optName $ stringToMaybe a)
 
 longOpt = do
   string "--"
@@ -74,9 +78,9 @@ takeCommand (OptOther o:_) =
 takeCommand _ =
   Left "Expecting a command, got --option instead"
 
-lookupCommandDecls :: [Cmd] -> String -> Either String Cmd
-lookupCommandDecls cmdDecl cmd =
-  toEither $ find (\(Cmd c _) -> cmd == c) cmdDecl where
+lookupCommand :: [Cmd] -> String -> Either String Cmd
+lookupCommand cmdDecls cmd =
+  toEither $ find (\(Cmd c _) -> cmd == c) cmdDecls where
     toEither Nothing = Left ("Unknown command '" ++ cmd ++ "'")
     toEither (Just d) = return d
 
@@ -88,32 +92,22 @@ takeFileArgs =
     takeFileArg (OptOther o) = return o
     takeFileArg (Opt _ _) = Left "Options not allowed after file args"
 
-verifyNonEmptyOptionArgs :: [Opt] -> Either String ()
-verifyNonEmptyOptionArgs =
-  mapM_ testOptionArg where
-    testOptionArg (Opt _ (Just arg)) =
-      when (arg == "") $ Left "Option with an empty argument not allowed"
-    testOptionArg _ = return ()
-
 optName (NoArg x) = x
 optName (ReqArg x) = x
 
 verifyOptions :: [OptDecl] -> [Opt] -> Either String ()
 verifyOptions optDecls =
   mapM_ verifyOption where
-    verifyOption opt =
-      do
-        optDecl <- findOpt opt
-        verifyArg optDecl opt
+    verifyOption opt = findOpt opt >>= verifyArg opt
     findOpt (Opt opt _) =
       toEither $ find (\o -> opt == optName o) optDecls where
         toEither Nothing = Left ("Unknown option '" ++ opt ++ "'")
         toEither (Just d) = return d
-    verifyArg (NoArg _) (Opt optName (Just _)) =
-      Left ("Option '" ++ optName ++ "' not expecting an argument")
-    verifyArg (ReqArg _) (Opt optName Nothing) =
-      Left ("Option '" ++ optName ++ "' requires an argument")
-    verifyArg _ (Opt _ _) = return ()
+    verifyArg (Opt name (Just _)) (NoArg _) =
+      Left ("Option '" ++ name ++ "' not expecting an argument")
+    verifyArg (Opt name Nothing) (ReqArg _) =
+      Left ("Option '" ++ name ++ "' requires an argument")
+    verifyArg (Opt _ _) _ = return ()
 
 -- TODO OptionMap interface TBD
 optsToMap :: [Opt] -> OptMap
@@ -124,11 +118,8 @@ parseCommandLine globalOptDecls cmds args =
   let cmdLineTokens = parseArgs args
       (globalOpts, rest) = span isOption cmdLineTokens
   in do
-    verifyNonEmptyOptionArgs globalOpts
-    cmd <- takeCommand rest
-    Cmd _ cmdOpts <- lookupCommandDecls cmds cmd
+    Cmd cmd cmdOpts <- takeCommand rest >>= lookupCommand cmds
     let (localOpts, rest') = span isOption (tail rest)
-    verifyNonEmptyOptionArgs localOpts
     fileArgs <- takeFileArgs rest'
     verifyOptions globalOptDecls globalOpts
     verifyOptions cmdOpts localOpts
