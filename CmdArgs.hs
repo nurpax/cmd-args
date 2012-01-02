@@ -65,7 +65,6 @@ parseArgs =
 isOption (Opt _ _) = True
 isOption (OptOther _) = False
 
--- TODO check valid commands here too, pass in a new param
 takeCommand :: [Opt] -> Either String String
 takeCommand [] =
   Left "No command given"
