@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures -fno-warn-unused-do-bind #-}
 
 module CmdArgs (
     Cmd(..)
@@ -8,8 +9,6 @@ module CmdArgs (
 
 import qualified Data.Map as M
 import Data.List (find)
-import Control.Monad (when)
-
 import Text.ParserCombinators.Parsec
 
 data Cmd = Cmd String [OptDecl]
@@ -28,32 +27,29 @@ identOrEmpty = many (noneOf "=")
 
 ident = many1 (noneOf "=")
 
--- Allow empty idents here so that we can easier disallow '--foo='
--- inputs (i.e., options ending with = but with no argument given.)
--- Otherwise '--foo=' is interpreted as not an option which causes
--- hard to understand error messages later.
-longOptArg = do
-  char '='
-  identOrEmpty
-
 stringToMaybe :: String -> Maybe String
 stringToMaybe s =
   if s == "" then Nothing else Just s
 
-longOptArgOrNone optName =
+-- Allow empty idents here so that we can easier disallow '--foo='
+-- inputs (i.e., options ending with = but with no argument given.)
+-- Otherwise '--foo=' is interpreted as not an option which causes
+-- hard to understand error messages later.
+longOptArgOrNone opt =
   do
     eof
-    return (Opt optName Nothing)
+    return (Opt opt Nothing)
   <|>
   do
-    a <- longOptArg
+    char '='
+    a <- identOrEmpty
     eof
-    return (Opt optName $ stringToMaybe a)
+    return (Opt opt $ stringToMaybe a)
 
 longOpt = do
   string "--"
-  optName <- ident
-  longOptArgOrNone optName
+  opt <- ident
+  longOptArgOrNone opt
 
 parseLongArg :: String -> Either ParseError Opt
 parseLongArg = parse longOpt ""
@@ -103,11 +99,13 @@ verifyOptions optDecls =
       toEither $ find (\o -> opt == optName o) optDecls where
         toEither Nothing = Left ("Unknown option '" ++ opt ++ "'")
         toEither (Just d) = return d
+    findOpt (OptOther _) = error "internal error: cannot happen"
     verifyArg (Opt name (Just _)) (NoArg _) =
       Left ("Option '" ++ name ++ "' not expecting an argument")
     verifyArg (Opt name Nothing) (ReqArg _) =
       Left ("Option '" ++ name ++ "' requires an argument")
     verifyArg (Opt _ _) _ = return ()
+    verifyArg (OptOther _) _ = error "internal error: cannot happen"
 
 -- TODO OptionMap interface TBD
 optsToMap :: [Opt] -> OptMap
