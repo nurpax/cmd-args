@@ -4,7 +4,6 @@ import System.Environment (getArgs)
 import qualified Data.Map as M (lookup)
 import CmdArgs
 
-
 {- FOO
 
 foo=`reltrack new-run --job=gcov`
@@ -13,21 +12,22 @@ reltrack list jobs
 reltrack list errors
 -}
 
+globalOpts :: [OptDecl]
 globalOpts = []
 
+cmds :: [Cmd]
 cmds =
   [
     Cmd "new-run" [ReqArg "job"],
     Cmd "set-error" [ReqArg "run-id"]
   ]
 
-report :: Either String a -> IO ()
-report (Right s) = return ()
-report (Left err) = putStrLn err >> exitFailure
+reportErr :: String -> IO ()
+reportErr err = putStrLn err >> exitFailure
 
-reportOrRun :: (a -> IO ()) -> Either String a -> IO ()
-reportOrRun f (Right args) = f args
-reportOrRun _ (Left err)  = putStrLn err >> exitFailure
+reportOrRun :: Either String (IO ()) -> IO ()
+reportOrRun (Right ioAct) = ioAct
+reportOrRun (Left err)  = reportErr err
 
 requireOptStrArg :: OptMap -> String -> Either String String
 requireOptStrArg opts s =
@@ -44,27 +44,28 @@ requireSingleFileArg _ = Left "single file argument required, more than one give
 
 handleNewRun :: OptMap -> [String] -> IO ()
 handleNewRun lopts fileArgs =
-  reportOrRun newRun $ do
+  reportOrRun $ do
     jobId <- requireOptStrArg lopts "job"
     jobType <- requireSingleFileArg fileArgs
-    return (jobId, jobType)
+    return (action jobId jobType)
   where
-    newRun (jobId, jobType) = putStrLn ("new-run "++show jobId ++ " job type: "++jobType)
+    action jobId jobType = putStrLn ("new-run "++show jobId ++ " job type: "++jobType)
 
 handleSetError :: OptMap -> [String] -> IO ()
-handleSetError lopts files =
-  reportOrRun newRun $ do
+handleSetError lopts _ =
+  reportOrRun $ do
     runId <- requireOptStrArg lopts "run-id"
-    return runId
+    return (action runId)
   where
-    newRun runId = putStrLn ("set-error for run-id="++show runId)
+    action runId = putStrLn ("set-error for run-id="++show runId)
 
 handle :: Either String (OptMap, String, OptMap, [String]) -> IO ()
-handle (Right (gopts,cmd,lopts,files)) =
+handle (Right (_, cmd, lopts, files)) =
   case cmd of
     "new-run" -> handleNewRun lopts files
     "set-error" -> handleSetError lopts files
-handle l@(Left _) = report l
+    _ -> reportErr "unknown command"
+handle (Left err) = reportErr err
 
 main :: IO ()
 main =
