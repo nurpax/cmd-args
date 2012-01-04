@@ -5,6 +5,9 @@ module CmdArgs (
   , OptDecl(..)
   , OptMap
   , parseCommandLine
+  , requireOptArg
+  , requireOpt
+  , requireSingleFileArg
   ) where
 
 import Data.Maybe (mapMaybe)
@@ -109,8 +112,8 @@ verifyOptions optDecls =
 
 -- TODO OptionMap interface TBD
 optsToMap :: [Opt] -> OptMap
-optsToMap opts = 
-  M.fromList (mapMaybe convOpt opts) where  
+optsToMap opts =
+  M.fromList (mapMaybe convOpt opts) where
     convOpt (Opt n v) = Just (n, v)
     convOpt (OptOther _) = Nothing
 
@@ -125,3 +128,24 @@ parseCommandLine globalOptDecls cmds args =
     verifyOptions globalOptDecls globalOpts
     verifyOptions cmdOpts localOpts
     return (optsToMap globalOpts, cmd, optsToMap localOpts, fileArgs)
+
+-- Helper accessor for dealing with parsed command line
+requireOptArg:: OptMap -> String -> Either String String
+requireOptArg opts s =
+  case M.lookup s opts of
+    Just v ->
+      maybe (Left $ "no value for option '" ++ s ++ "'") return v
+    Nothing ->
+      Left ("option '" ++ s ++ "' is required but not given")
+
+requireOpt:: OptMap -> String -> Either String Bool
+requireOpt opts s =
+  if M.member s opts then
+    return True
+  else
+    Left ("option '" ++ s ++ "' is required but not given")
+
+requireSingleFileArg :: [String] -> Either String String
+requireSingleFileArg [] = Left "single file argument required, none given"
+requireSingleFileArg [x] = return x
+requireSingleFileArg _ = Left "single file argument required, more than one given"
