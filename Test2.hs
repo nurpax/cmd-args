@@ -37,13 +37,19 @@ requireOptStrArg opts s =
     Nothing ->
       Left ("option '" ++ s ++ "' is required but not given")
 
+requireSingleFileArg :: [String] -> Either String String
+requireSingleFileArg [] = Left "single file argument required, none given"
+requireSingleFileArg [x] = return x
+requireSingleFileArg _ = Left "single file argument required, more than one given"
+
 handleNewRun :: OptMap -> [String] -> IO ()
-handleNewRun lopts files =
+handleNewRun lopts fileArgs =
   reportOrRun newRun $ do
     jobId <- requireOptStrArg lopts "job"
-    return jobId
+    jobType <- requireSingleFileArg fileArgs
+    return (jobId, jobType)
   where
-    newRun jobId = putStrLn ("new-run "++show jobId)
+    newRun (jobId, jobType) = putStrLn ("new-run "++show jobId ++ " job type: "++jobType)
 
 handleSetError :: OptMap -> [String] -> IO ()
 handleSetError lopts files =
