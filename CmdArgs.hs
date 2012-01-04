@@ -7,6 +7,7 @@ module CmdArgs (
   , parseCommandLine
   ) where
 
+import Data.Maybe (mapMaybe)
 import qualified Data.Map as M
 import Data.List (find)
 import Text.ParserCombinators.Parsec
@@ -21,7 +22,7 @@ data Opt =
     Opt String (Maybe String)
   | OptOther String
 
-type OptMap = M.Map String String
+type OptMap = M.Map String (Maybe String)
 
 identOrEmpty = many (noneOf "=")
 
@@ -108,7 +109,10 @@ verifyOptions optDecls =
 
 -- TODO OptionMap interface TBD
 optsToMap :: [Opt] -> OptMap
-optsToMap _ = M.empty
+optsToMap opts = 
+  M.fromList (mapMaybe convOpt opts) where  
+    convOpt (Opt n v) = Just (n, v)
+    convOpt (OptOther _) = Nothing
 
 parseCommandLine :: [OptDecl] -> [Cmd] -> [String] -> Either String (OptMap, String, OptMap, [String])
 parseCommandLine globalOptDecls cmds args =
