@@ -130,7 +130,7 @@ parseCommandLine globalOptDecls cmds args =
     return (optsToMap globalOpts, cmd, optsToMap localOpts, fileArgs)
 
 -- Helper accessor for dealing with parsed command line
-requireOptArg:: OptMap -> String -> Either String String
+requireOptArg :: OptMap -> String -> Either String String
 requireOptArg opts s =
   case M.lookup s opts of
     Just v ->
@@ -138,7 +138,7 @@ requireOptArg opts s =
     Nothing ->
       Left ("option '" ++ s ++ "' is required but not given")
 
-requireOpt:: OptMap -> String -> Either String Bool
+requireOpt :: OptMap -> String -> Either String Bool
 requireOpt opts s =
   if M.member s opts then
     return True
