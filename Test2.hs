@@ -47,7 +47,7 @@ handleArgs (Right (_, cmd, lopts, files)) =
     "new-run" -> handleNewRun lopts files
     "set-error" -> handleSetError lopts files
     _ -> reportErr "unknown command"
-handle (Left err) = reportErr err
+handleArgs (Left err) = reportErr err
 
 main :: IO ()
 main =
