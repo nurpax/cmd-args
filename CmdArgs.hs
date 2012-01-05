@@ -6,7 +6,6 @@ module CmdArgs (
   , OptMap
   , parseCommandLine
   , requireOptArg
-  , requireOpt
   , requireSingleFileArg
   , requireFileArgOneOf
   ) where
@@ -138,13 +137,6 @@ requireOptArg opts s =
       maybe (Left $ "no value for option '" ++ s ++ "'") return v
     Nothing ->
       Left ("option '" ++ s ++ "' is required but not given")
-
-requireOpt :: OptMap -> String -> Either String Bool
-requireOpt opts s =
-  if M.member s opts then
-    return True
-  else
-    Left ("option '" ++ s ++ "' is required but not given")
 
 requireSingleFileArg :: [String] -> Either String String
 requireSingleFileArg [] = Left "single file argument required, none given"
