@@ -8,11 +8,12 @@ module CmdArgs (
   , requireOptArg
   , requireOpt
   , requireSingleFileArg
+  , requireFileArgOneOf
   ) where
 
 import Data.Maybe (mapMaybe)
 import qualified Data.Map as M
-import Data.List (find)
+import Data.List (find, intercalate)
 import Text.ParserCombinators.Parsec
 
 data Cmd = Cmd String [OptDecl]
@@ -149,3 +150,11 @@ requireSingleFileArg :: [String] -> Either String String
 requireSingleFileArg [] = Left "single file argument required, none given"
 requireSingleFileArg [x] = return x
 requireSingleFileArg _ = Left "single file argument required, more than one given"
+
+requireFileArgOneOf :: [String] -> [String] -> Either String String
+requireFileArgOneOf fileArgs alts =
+  do
+    singleArg <- requireSingleFileArg fileArgs
+    if singleArg `elem` alts then
+      return singleArg
+      else (Right ("expecting single file argument to be one of " ++ intercalate ", " alts))
