@@ -157,4 +157,4 @@ requireFileArgOneOf fileArgs alts =
     singleArg <- requireSingleFileArg fileArgs
     if singleArg `elem` alts then
       return singleArg
-      else (Right ("expecting single file argument to be one of " ++ intercalate ", " alts))
+      else (Left ("expecting single file argument to be one of " ++ intercalate "," alts))
