@@ -1,5 +1,36 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures -fno-warn-unused-do-bind #-}
 
+-- | Library for simple \"git style\" command line parsing.
+--
+-- The following command line syntax is recognized:
+--
+-- @
+-- app [--global-opts, ...] <cmd> [--options-local-to-command, ...] [file-args]
+-- @
+--
+-- Command @cmd@ can be any string.
+--
+-- Option syntax is strict, only @--option@ or @--option=value@ are
+-- recognized.
+--
+-- An application is invoked with a set of global options, a command
+-- @cmd@ and a set of options specific to command @cmd@.  Global
+-- options are shared across all accepted commands whereas each
+-- command can have its own set of local options.  For example:
+--
+-- @
+-- git commit --all file.c
+-- @
+--
+-- Global options can be used to set values that apply to all commands
+-- accepted by the application.  For example, one could imagine
+-- setting the desired verbosity level or a database path using global
+-- options:
+--
+-- @
+-- db_app --db-path=\/path\/foo.sql init
+-- @
+--
 module CmdArgs (
     Cmd(..)
   , OptDecl(..)
@@ -15,17 +46,21 @@ import qualified Data.Map as M
 import Data.List (find, intercalate)
 import Text.ParserCombinators.Parsec
 
+-- | Declare a command: its name and the associated local options.
 data Cmd = Cmd String [OptDecl]
 
+-- | Declare an option.  Option name can be any string but must not
+-- include a @--@ prefix.
 data OptDecl =
-    NoArg String
-  | ReqArg String
+    NoArg String    -- ^ Option without an argument (e.g., @--foo@)
+  | ReqArg String   -- ^ Option with a required argument (e.g., @--foo=bar@)
+
+-- | Map from option name to an option value.
+type OptMap = M.Map String (Maybe String)
 
 data Opt =
     Opt String (Maybe String)
   | OptOther String
-
-type OptMap = M.Map String (Maybe String)
 
 identOrEmpty = many (noneOf "=")
 
