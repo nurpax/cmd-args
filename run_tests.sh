@@ -1,9 +1,11 @@
 #!/bin/bash
 
+set -e
+
 function expect_ok ()
 {
-    ./Test $*
-    if [ $? = 0 ]; then
+
+    if ./Test $*; then
         echo "Test passed: $*"
     else
         echo "Test failed!"
@@ -15,8 +17,8 @@ function expect_ok ()
 
 function expect_fail ()
 {
-    ./Test $* > /dev/null
-    if [ $? != 0 ]; then
+
+    if ! ./Test $* > /dev/null; then
         echo "Test passed: $*"
     else
         echo "Test failed!"
@@ -81,3 +83,5 @@ expect_fail --global-foo-with-args add foo.c
 # ditto for locals
 expect_fail add foo.c --local-foo-with-arg
 expect_fail add foo.c --local-foo=bar
+
+echo "ALL PASS"
