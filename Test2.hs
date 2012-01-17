@@ -14,17 +14,14 @@ cmds =
     Cmd "set-error" [ReqArg "run-id"]
   ]
 
-reportErr :: String -> IO ()
-reportErr err = putStrLn err >> exitFailure
-
 reportOrRun :: Either String (IO ()) -> IO ()
 reportOrRun (Right ioAct) = ioAct
-reportOrRun (Left err)  = reportErr err
+reportOrRun (Left err)  = putStrLn err >> exitFailure
 
 -- <app> new-run [--job=id] <type>
-handleNewRun :: OptMap -> [String] -> IO ()
+handleNewRun :: OptMap -> [String] -> Either String (IO ())
 handleNewRun lopts fileArgs =
-  reportOrRun $ do
+  do
     jobId <- requireOptArg lopts "job"
     jobType <- requireSingleFileArg fileArgs
     return (action jobId jobType)
@@ -32,23 +29,25 @@ handleNewRun lopts fileArgs =
     action jobId jobType = putStrLn ("new-run "++show jobId ++ " job type: "++jobType)
 
 -- <app> set-error [--run-id=<id>] <error>
-handleSetError :: OptMap -> [String] -> IO ()
+handleSetError :: OptMap -> [String] -> Either String (IO ())
 handleSetError lopts fileArgs =
-  reportOrRun $ do
+  do
     runId <- requireOptArg lopts "run-id"
     err <- requireSingleFileArg fileArgs
     return (action runId err)
   where
     action runId err = putStrLn ("set-error for run-id=" ++ show runId ++ " code:" ++ err)
 
-handleArgs :: Either String (OptMap, String, OptMap, [String]) -> IO ()
-handleArgs (Right (_, cmd, lopts, files)) =
+handleArgs :: Either String (OptMap, String, OptMap, [String]) -> Either String (IO ())
+handleArgs opts = do
+  (_, cmd, lopts, files) <- opts
   case cmd of
-    "new-run" -> handleNewRun lopts files
-    "set-error" -> handleSetError lopts files
-    _ -> reportErr "unknown command"
-handleArgs (Left err) = reportErr err
+    "new-run" ->
+      handleNewRun lopts files
+    "set-error" ->
+      handleSetError lopts files
+    _ -> Left ("unknown command '" ++ cmd ++ "'")
 
 main :: IO ()
 main =
-  fmap (parseCommandLine globalOpts cmds) getArgs >>= handleArgs
+  fmap (parseCommandLine globalOpts cmds) getArgs >>= reportOrRun . handleArgs
